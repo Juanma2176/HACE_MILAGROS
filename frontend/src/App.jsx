@@ -35,7 +35,7 @@ function App() {
   });
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/productos")
+    fetch("https://hace-milagros-api.onrender.com/api/productos")
       .then((respuesta) => respuesta.json())
       .then((datos) => setProductos(datos))
       .catch(() => setProductos([]))
@@ -96,7 +96,7 @@ function App() {
     };
 
     try {
-      const respuesta = await fetch("http://localhost:5000/api/pedidos", {
+      const respuesta = await fetch("https://hace-milagros-api.onrender.com/api/pedidos", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

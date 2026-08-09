@@ -21,8 +21,8 @@ function Admin() {
   };
 
   async function cargarDatos() {
-    const respuestaProductos = await fetch("http://localhost:5000/api/productos");
-    const respuestaPedidos = await fetch("http://localhost:5000/api/pedidos", {
+    const respuestaProductos = await fetch("https://hace-milagros-api.onrender.com/api/productos");
+    const respuestaPedidos = await fetch("https://hace-milagros-api.onrender.com/api/pedidos", {
       headers: encabezados,
     });
 
@@ -43,7 +43,7 @@ function Admin() {
 
   async function iniciarSesion(evento) {
     evento.preventDefault();
-    const respuesta = await fetch("http://localhost:5000/api/auth/login", {
+    const respuesta = await fetch("https://hace-milagros-api.onrender.com/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -73,7 +73,7 @@ function Admin() {
 
   async function crearProducto(evento) {
     evento.preventDefault();
-    const respuesta = await fetch("http://localhost:5000/api/productos", {
+    const respuesta = await fetch("https://hace-milagros-api.onrender.com/api/productos", {
       method: "POST",
       headers: encabezados,
       body: JSON.stringify({
@@ -96,7 +96,7 @@ function Admin() {
   async function eliminarProducto(id) {
     if (!window.confirm("Deseas eliminar este producto?")) return;
 
-    const respuesta = await fetch(`http://localhost:5000/api/productos/${id}`, {
+    const respuesta = await fetch(`https://hace-milagros-api.onrender.com/api/productos/${id}`, {
       method: "DELETE",
       headers: encabezados,
     });
