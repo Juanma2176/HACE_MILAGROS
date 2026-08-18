@@ -1,200 +1,293 @@
-import Admin from "./Admin";
 import { useEffect, useState } from "react";
 import "./App.css";
-import logo from "./assets/logo-hace-milagros.png";
-import labialImagen from "./assets/labial.png";
-import sombrasImagen from "./assets/sombras.png";
-import baseImagen from "./assets/base.png";
-import mascaraImagen from "./assets/mascara.png";
+import Admin from "./Admin";
 
-const iconos = {
-  Rostro: "R",
-  Labios: "L",
-  Ojos: "O",
+import logo from "./assets/logo-hace-milagros.png";
+import labios from "./assets/labios.png";
+import ojos from "./assets/ojos.png";
+import rostro from "./assets/rostro.png";
+import accesorios from "./assets/accesorios.png";
+
+const API_URL = "https://hace-milagros-ald8.onrender.com";
+
+const imagenPorCategoria = {
+  Labios: labios,
+  Ojos: ojos,
+  Rostro: rostro,
+  Accesorios: accesorios,
 };
-const imagenes = {
-  "Labial mate rosa": labialImagen,
-  "Paleta de sombras nude": sombrasImagen,
-  "Base líquida natural": baseImagen,
-  "Máscara de pestañas": mascaraImagen,
-};
+
 function App() {
-    if (window.location.pathname === "/admin") {
-    return <Admin />;
-  }
   const [productos, setProductos] = useState([]);
-  const [cargando, setCargando] = useState(true);
   const [carrito, setCarrito] = useState([]);
   const [mostrarCarrito, setMostrarCarrito] = useState(false);
-  const [mostrarCompra, setMostrarCompra] = useState(false);
-  const [mensajePedido, setMensajePedido] = useState("");
-  const [cliente, setCliente] = useState({
-    nombre: "",
-    telefono: "",
-    direccion: "",
-  });
+  const [nombre, setNombre] = useState("");
+  const [telefono, setTelefono] = useState("");
+  const [direccion, setDireccion] = useState("");
+  const [mensaje, setMensaje] = useState("");
+  const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
-    fetch("https://hace-milagros-ald8.onrender.com/api/productos")
-      .then((respuesta) => respuesta.json())
-      .then((datos) => setProductos(datos))
-      .catch(() => setProductos([]))
-      .finally(() => setCargando(false));
+    cargarProductos();
   }, []);
 
-  function agregarAlCarrito(producto) {
-    setCarrito((actual) => {
-      const existe = actual.find((item) => item._id === producto._id);
-
-      if (existe) {
-        return actual.map((item) =>
-          item._id === producto._id
-            ? { ...item, cantidad: item.cantidad + 1 }
-            : item
-        );
-      }
-
-      return [...actual, { ...producto, cantidad: 1 }];
-    });
-  }
-
-  function cambiarCantidad(id, cambio) {
-    setCarrito((actual) =>
-      actual
-        .map((item) =>
-          item._id === id
-            ? { ...item, cantidad: item.cantidad + cambio }
-            : item
-        )
-        .filter((item) => item.cantidad > 0)
-    );
-  }
-
-  function quitarProducto(id) {
-    setCarrito((actual) => actual.filter((item) => item._id !== id));
-  }
-
-  function cambiarCliente(evento) {
-    setCliente({
-      ...cliente,
-      [evento.target.name]: evento.target.value,
-    });
-  }
-
-  async function enviarPedido(evento) {
-    evento.preventDefault();
-
-    const pedido = {
-      cliente,
-      productos: carrito.map((item) => ({
-        productoId: item._id,
-        nombre: item.nombre,
-        precio: item.precio,
-        cantidad: item.cantidad,
-      })),
-      total: totalCompra,
-    };
-
+  async function cargarProductos() {
     try {
-      const respuesta = await fetch("https://hace-milagros-ald8.onrender.com/api/pedidos", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(pedido),
-      });
+      setCargando(true);
 
-      if (!respuesta.ok) {
-        throw new Error();
-      }
+      const respuesta = await fetch(`${API_URL}/api/productos`);
+      const datos = await respuesta.json();
 
-      setCarrito([]);
-      setMostrarCompra(false);
-      setMensajePedido("Pedido enviado correctamente. Te contactaremos pronto.");
-      setCliente({ nombre: "", telefono: "", direccion: "" });
-    } catch {
-      setMensajePedido("No fue posible enviar el pedido. Intenta de nuevo.");
+      setProductos(datos);
+    } catch (error) {
+      console.error(error);
+      setMensaje("No fue posible cargar los productos. Intenta nuevamente.");
+    } finally {
+      setCargando(false);
     }
   }
 
-  const cantidadTotal = carrito.reduce(
-    (total, item) => total + item.cantidad,
+  function agregarAlCarrito(producto) {
+    const productoExiste = carrito.find(
+      (productoCarrito) => productoCarrito._id === producto._id
+    );
+
+    if (productoExiste) {
+      setCarrito(
+        carrito.map((productoCarrito) =>
+          productoCarrito._id === producto._id
+            ? {
+                ...productoCarrito,
+                cantidad: productoCarrito.cantidad + 1,
+              }
+            : productoCarrito
+        )
+      );
+    } else {
+      setCarrito([...carrito, { ...producto, cantidad: 1 }]);
+    }
+
+    setMensaje(`${producto.nombre} fue agregado al carrito.`);
+  }
+
+  function disminuirCantidad(id) {
+    setCarrito(
+      carrito
+        .map((producto) =>
+          producto._id === id
+            ? { ...producto, cantidad: producto.cantidad - 1 }
+            : producto
+        )
+        .filter((producto) => producto.cantidad > 0)
+    );
+  }
+
+  function aumentarCantidad(id) {
+    setCarrito(
+      carrito.map((producto) =>
+        producto._id === id
+          ? { ...producto, cantidad: producto.cantidad + 1 }
+          : producto
+      )
+    );
+  }
+
+  function eliminarDelCarrito(id) {
+    setCarrito(carrito.filter((producto) => producto._id !== id));
+  }
+
+  const totalProductos = carrito.reduce(
+    (total, producto) => total + producto.cantidad,
     0
   );
 
   const totalCompra = carrito.reduce(
-    (total, item) => total + item.precio * item.cantidad,
+    (total, producto) => total + producto.precio * producto.cantidad,
     0
   );
 
-  const formatoPrecio = new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    maximumFractionDigits: 0,
-  });
+  async function enviarPedido(evento) {
+    evento.preventDefault();
+
+    if (carrito.length === 0) {
+      setMensaje("Agrega al menos un producto al carrito.");
+      return;
+    }
+
+    if (!nombre || !telefono || !direccion) {
+      setMensaje("Completa tu nombre, teléfono y dirección.");
+      return;
+    }
+
+    try {
+      const respuesta = await fetch(`${API_URL}/api/pedidos`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          cliente: nombre,
+          telefono,
+          direccion,
+          productos: carrito.map((producto) => ({
+            producto: producto._id,
+            nombre: producto.nombre,
+            precio: producto.precio,
+            cantidad: producto.cantidad,
+          })),
+          total: totalCompra,
+        }),
+      });
+
+      if (!respuesta.ok) {
+        throw new Error("No se pudo enviar el pedido");
+      }
+
+      setMensaje("Pedido enviado correctamente. Te contactaremos pronto.");
+      setCarrito([]);
+      setNombre("");
+      setTelefono("");
+      setDireccion("");
+      setMostrarCarrito(false);
+    } catch (error) {
+      console.error(error);
+      setMensaje("No fue posible enviar el pedido. Intenta nuevamente.");
+    }
+  }
+
+  if (window.location.pathname === "/admin") {
+    return <Admin />;
+  }
 
   return (
-    <main>
+    <main className="app">
       <header className="encabezado">
-       <div>
-  <img
-    src={logo}
-    alt="Hace Milagros - Belleza que transforma"
-    style={{ width: "260px", maxWidth: "60vw" }}
-  />
-</div>
+        <img className="logo" src={logo} alt="Hace Milagros" />
 
-        <button className="carrito" onClick={() => setMostrarCarrito(true)}>
-          Carrito <span>{cantidadTotal}</span>
+        <button
+          className="boton-carrito"
+          onClick={() => setMostrarCarrito(!mostrarCarrito)}
+        >
+          Carrito <span>{totalProductos}</span>
         </button>
       </header>
 
       <section className="hero">
-        <p>MAQUILLAJE PARA TI</p>
-        <h2>Resalta la magia que ya tienes</h2>
-        <span>Productos elegidos para acompanarte todos los dias.</span>
+        <p className="etiqueta">MAQUILLAJE PARA TI</p>
+        <h1>Resalta la magia que ya tienes</h1>
+        <p>Productos elegidos para acompañarte todos los días.</p>
       </section>
 
-      <section className="catalogo">
-        <div className="titulo-seccion">
-          <div>
-            <p>NUESTROS FAVORITOS</p>
-            <h2>Catalogo de maquillaje</h2>
+      {mensaje && <p className="mensaje">{mensaje}</p>}
+
+      {mostrarCarrito && (
+        <section className="panel-carrito">
+          <div className="titulo-carrito">
+            <h2>Tu carrito</h2>
+
+            <button onClick={() => setMostrarCarrito(false)}>Cerrar</button>
           </div>
-          <span>{productos.length} productos</span>
+
+          {carrito.length === 0 ? (
+            <p>Tu carrito está vacío.</p>
+          ) : (
+            <>
+              {carrito.map((producto) => (
+                <article className="item-carrito" key={producto._id}>
+                  <div>
+                    <strong>{producto.nombre}</strong>
+                    <p>
+                      ${(producto.precio * producto.cantidad).toLocaleString("es-CO")}
+                    </p>
+                  </div>
+
+                  <div className="controles-cantidad">
+                    <button onClick={() => disminuirCantidad(producto._id)}>
+                      −
+                    </button>
+
+                    <span>{producto.cantidad}</span>
+
+                    <button onClick={() => aumentarCantidad(producto._id)}>
+                      +
+                    </button>
+
+                    <button
+                      className="boton-eliminar"
+                      onClick={() => eliminarDelCarrito(producto._id)}
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                </article>
+              ))}
+
+              <h3>Total: ${totalCompra.toLocaleString("es-CO")}</h3>
+
+              <form className="formulario-pedido" onSubmit={enviarPedido}>
+                <input
+                  type="text"
+                  placeholder="Tu nombre completo"
+                  value={nombre}
+                  onChange={(evento) => setNombre(evento.target.value)}
+                />
+
+                <input
+                  type="tel"
+                  placeholder="Tu número de teléfono"
+                  value={telefono}
+                  onChange={(evento) => setTelefono(evento.target.value)}
+                />
+
+                <input
+                  type="text"
+                  placeholder="Dirección de entrega"
+                  value={direccion}
+                  onChange={(evento) => setDireccion(evento.target.value)}
+                />
+
+                <button type="submit">Enviar pedido</button>
+              </form>
+            </>
+          )}
+        </section>
+      )}
+
+      <section className="catalogo">
+        <div className="titulo-catalogo">
+          <div>
+            <p className="etiqueta">NUESTROS FAVORITOS</p>
+            <h2>Catálogo de maquillaje</h2>
+          </div>
+
+          <p>{productos.length} productos</p>
         </div>
 
-        {mensajePedido && <p className="confirmacion">{mensajePedido}</p>}
-
         {cargando ? (
-          <p className="mensaje">Cargando productos...</p>
+          <p>Cargando productos...</p>
         ) : (
-          <div className="productos">
+          <div className="lista-productos">
             {productos.map((producto) => (
-              <article className="tarjeta" key={producto._id}>
-                <div className="imagen-producto">
-  {imagenes[producto.nombre] ? (
-    <img
-      src={imagenes[producto.nombre]}
-      alt={producto.nombre}
-      style={{
-        width: "100%",
-        height: "100%",
-        objectFit: "cover",
-        borderRadius: "12px",
-      }}
-    />
-  ) : (
-    iconos[producto.categoria] || "M"
-  )}
-</div>
+              <article className="tarjeta-producto" key={producto._id}>
+                <img
+                  className="imagen-producto"
+                  src={
+                    producto.imagen ||
+                    imagenPorCategoria[producto.categoria] ||
+                    rostro
+                  }
+                  alt={producto.nombre}
+                />
 
                 <p className="categoria">{producto.categoria}</p>
+
                 <h3>{producto.nombre}</h3>
+
                 <p className="descripcion">{producto.descripcion}</p>
 
-                <div className="pie-tarjeta">
-                  <strong>{formatoPrecio.format(producto.precio)}</strong>
+                <div className="pie-producto">
+                  <strong>${producto.precio.toLocaleString("es-CO")}</strong>
+
                   <button onClick={() => agregarAlCarrito(producto)}>
                     Agregar
                   </button>
@@ -204,113 +297,6 @@ function App() {
           </div>
         )}
       </section>
-
-      {mostrarCarrito && (
-        <div className="fondo-carrito">
-          <aside className="panel-carrito">
-            <div className="encabezado-carrito">
-              <h2>Tu carrito</h2>
-              <button onClick={() => setMostrarCarrito(false)}>X</button>
-            </div>
-
-            {carrito.length === 0 ? (
-              <p className="mensaje">Tu carrito esta vacio.</p>
-            ) : (
-              <>
-                <div className="lista-carrito">
-                  {carrito.map((item) => (
-                    <div className="item-carrito" key={item._id}>
-                      <div>
-                        <h3>{item.nombre}</h3>
-                        <p>{formatoPrecio.format(item.precio)}</p>
-                      </div>
-
-                      <div className="controles-cantidad">
-                        <button onClick={() => cambiarCantidad(item._id, -1)}>
-                          -
-                        </button>
-                        <span>{item.cantidad}</span>
-                        <button onClick={() => cambiarCantidad(item._id, 1)}>
-                          +
-                        </button>
-                      </div>
-
-                      <button
-                        className="quitar"
-                        onClick={() => quitarProducto(item._id)}
-                      >
-                        Quitar
-                      </button>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="resumen-carrito">
-                  <strong>Total: {formatoPrecio.format(totalCompra)}</strong>
-                  <button
-                    className="comprar"
-                    onClick={() => {
-                      setMostrarCarrito(false);
-                      setMostrarCompra(true);
-                    }}
-                  >
-                    Continuar compra
-                  </button>
-                </div>
-              </>
-            )}
-          </aside>
-        </div>
-      )}
-
-      {mostrarCompra && (
-        <div className="fondo-carrito">
-          <form className="panel-carrito formulario" onSubmit={enviarPedido}>
-            <div className="encabezado-carrito">
-              <h2>Finalizar pedido</h2>
-              <button type="button" onClick={() => setMostrarCompra(false)}>
-                X
-              </button>
-            </div>
-
-            <label>
-              Nombre completo
-              <input
-                name="nombre"
-                value={cliente.nombre}
-                onChange={cambiarCliente}
-                required
-              />
-            </label>
-
-            <label>
-              Telefono
-              <input
-                name="telefono"
-                value={cliente.telefono}
-                onChange={cambiarCliente}
-                required
-              />
-            </label>
-
-            <label>
-              Direccion de entrega
-              <textarea
-                name="direccion"
-                value={cliente.direccion}
-                onChange={cambiarCliente}
-                required
-              />
-            </label>
-
-            <p>Total: {formatoPrecio.format(totalCompra)}</p>
-
-            <button className="comprar" type="submit">
-              Enviar pedido
-            </button>
-          </form>
-        </div>
-      )}
     </main>
   );
 }
